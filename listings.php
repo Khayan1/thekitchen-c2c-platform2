@@ -1,159 +1,153 @@
 <?php
-require_once 'includes/config.php';
+$adminTitle = 'Manage Listings';
+require_once 'admin-header.php';
 
 $db = getDB();
-$cat = $_GET['cat'] ?? '';
-$search = trim($_GET['q'] ?? '');
-$sort = $_GET['sort'] ?? 'newest';
 
-$where = ["l.status = 'active'"];
-$params = [];
+// Handle actions - FIXED SQL INJECTION
+if (isset($_POST['action'])) {
+    $lid    = (int)$_POST['listing_id'];
+    $action = $_POST['action'];
+    if ($action === 'remove') {
+        $stmt = $db->prepare("UPDATE listings SET status='removed' WHERE listing_id = ?");
+        $stmt->bind_param("i", $lid);
+        $stmt->execute();
+        $msg = 'Listing removed.';
+    } elseif ($action === 'activate') {
+        $stmt = $db->prepare("UPDATE listings SET status='active' WHERE listing_id = ?");
+        $stmt->bind_param("i", $lid);
+        $stmt->execute();
+        $msg = 'Listing activated.';
+    }
+}
+
+$filter = $_GET['status'] ?? '';
+$search = trim($_GET['q'] ?? '');
+$where  = ['1=1'];
+$params = []; 
 $types = '';
 
-if ($cat) {
-    $where[] = "l.category = ?";
-    $params[] = $cat;
-    $types .= 's';
+if ($filter) { 
+    $where[] = "l.status=?"; 
+    $params[] = $filter; 
+    $types .= 's'; 
 }
 if ($search) {
-    $where[] = "(l.title LIKE ? OR l.description LIKE ?)";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
+    $where[] = "(l.title LIKE ? OR u.full_name LIKE ?)";
+    $params[] = "%$search%"; 
+    $params[] = "%$search%"; 
     $types .= 'ss';
 }
 
-$orderBy = match($sort) {
-    'price_asc'  => 'l.price ASC',
-    'price_desc' => 'l.price DESC',
-    default      => 'l.created_at DESC',
-};
-
-$sql = "SELECT l.*, u.full_name, u.id_verified,
-    COALESCE(AVG(r.rating),0) AS avg_rating, COUNT(r.review_id) AS review_count
-    FROM listings l
-    JOIN users u ON l.user_id = u.user_id
-    LEFT JOIN reviews r ON l.listing_id = r.listing_id
-    WHERE " . implode(' AND ', $where) . "
-    GROUP BY l.listing_id ORDER BY $orderBy";
-
+$sql = "SELECT l.*, u.full_name, u.email FROM listings l JOIN users u ON l.user_id = u.user_id WHERE " . implode(' AND ', $where) . " ORDER BY l.created_at DESC";
 $stmt = $db->prepare($sql);
-if ($params) { $stmt->bind_param($types, ...$params); }
+if ($params) $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $listings = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-$cats = ['Electronics','Clothing & Shoes','Furniture','Books & Stationery','Vehicles','Food & Beverages','Sports & Outdoors','Services'];
-
-$pageTitle = 'Browse Listings';
-include 'includes/header.php';  // ← 
 ?>
 
-<div class="container" style="padding-top:2.5rem;padding-bottom:4rem">
-  <div class="row g-4">
+<main class="admin-main">
+  <div class="admin-topbar">
+    <h4><i class="bi bi-grid-3x3-gap me-2"></i> Manage Listings</h4>
+    <div style="font-size:12px;color:var(--admin-muted)"><?= count($listings) ?> results</div>
+  </div>
 
-    <!-- Sidebar -->
-    <div class="col-lg-3">
-      <div class="kitchen-card" style="position:sticky;top:84px">
-        <h5 class="fw-head mb-3">Filter listings</h5>
+  <div class="admin-content">
+    <?php if (isset($msg)): ?>
+    <div style="background:rgba(26,107,60,0.2);border:1px solid rgba(26,107,60,0.4);border-radius:8px;padding:0.8rem 1.2rem;margin-bottom:1.2rem;color:#4caf8a;font-size:13px">
+      <i class="bi bi-check-circle"></i> <?= h($msg) ?>
+    </div>
+    <?php endif; ?>
 
-        <form method="GET" action="listings.php">
-          <div class="mb-3">
-            <label class="form-label">Search</label>
-            <input type="text" name="q" class="form-control" placeholder="Keywords…" value="<?= h($search) ?>">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Category</label>
-            <select name="cat" class="form-select">
-              <option value="">All categories</option>
-              <?php foreach($cats as $c): ?>
-              <option value="<?= h($c) ?>" <?= $cat===$c?'selected':'' ?>><?= h($c) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Sort by</label>
-            <select name="sort" class="form-select">
-              <option value="newest" <?= $sort==='newest'?'selected':'' ?>>Newest first</option>
-              <option value="price_asc" <?= $sort==='price_asc'?'selected':'' ?>>Lowest price</option>
-              <option value="price_desc" <?= $sort==='price_desc'?'selected':'' ?>>Highest price</option>
-            </select>
-          </div>
-          <button type="submit" class="btn-kitchen-primary w-100" style="justify-content:center">
-            <i class="bi bi-search"></i> Apply filters
-          </button>
-        </form>
-
-        <?php if ($cat || $search): ?>
-        <a href="listings.php" class="btn-kitchen-outline w-100 mt-2" style="justify-content:center">
-          <i class="bi bi-x-circle"></i> Clear filters
-        </a>
-        <?php endif; ?>
-      </div>
+    <!-- Filters -->
+    <div style="display:flex;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap">
+      <form method="GET" style="display:flex;gap:0.5rem;align-items:center">
+        <input type="text" name="q" class="admin-input" style="width:220px" placeholder="Search title or seller…" value="<?= h($search) ?>">
+        <select name="status" class="admin-input" style="width:150px">
+          <option value="">All statuses</option>
+          <option value="active"  <?= $filter==='active'?'selected':'' ?>>Active</option>
+          <option value="sold"    <?= $filter==='sold'?'selected':'' ?>>Sold</option>
+          <option value="removed" <?= $filter==='removed'?'selected':'' ?>>Removed</option>
+          <option value="pending" <?= $filter==='pending'?'selected':'' ?>>Pending</option>
+        </select>
+        <button type="submit" class="admin-btn admin-btn-primary"><i class="bi bi-search"></i> Filter</button>
+      </form>
     </div>
 
-    <!-- Listings -->
-    <div class="col-lg-9">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h2 style="font-size:1.4rem;margin:0">
-            <?= $cat ? h($cat) : 'All listings' ?>
-            <?php if ($search): ?><span style="font-size:1rem;font-weight:400;color:var(--kitchen-gray)"> for "<?= h($search) ?>"</span><?php endif; ?>
-          </h2>
-          <small class="text-muted"><?= count($listings) ?> result<?= count($listings)!==1?'s':'' ?> found</small>
-        </div>
-        <?php if (isLoggedIn()): ?>
-        <a href="sell.php" class="btn-kitchen-primary"><i class="bi bi-plus-circle"></i> Sell item</a>
-        <?php endif; ?>
-      </div>
-
-      <?php if (empty($listings)): ?>
-        <div class="text-center py-5">
-          <i class="bi bi-search" style="font-size:3rem;color:var(--kitchen-border)"></i>
-          <h4 class="mt-3">No listings found</h4>
-          <p class="text-muted">Try a different search or category</p>
-        </div>
-      <?php else: ?>
-      <div class="row g-3">
-        <?php foreach($listings as $l): ?>
-        <div class="col-sm-6 col-xl-4 listing-card-wrap" data-cat="<?= h($l['category']) ?>">
-          <div class="listing-card">
-            <div class="listing-card-img">
-              <?php if ($l['image_url'] && $l['image_url'] !== 'placeholder.jpg'): ?>
-               <img src="uploads/<?= h($l['image_url']) ?>"
-     alt="<?= h($l['title']) ?>"
-     style="width:100%;height:100%;object-fit:cover"
-     onerror="this.parentNode.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:200px\'><i class=\'bi bi-image\' style=\'font-size:2.5rem;color:#D0CAC0\'></i></div>'">
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Seller</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Stock</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach($listings as $l): ?>
+          <tr>
+            <td style="max-width:200px">
+              <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= h($l['title']) ?></div>
+              <a href="../listing.php?id=<?= $l['listing_id'] ?>" target="_blank" style="font-size:11px;color:var(--admin-muted)">View on site ↗</a>
+             </td>
+            <td>
+              <div style="font-size:13px"><?= h($l['full_name']) ?></div>
+              <div style="font-size:11px;color:var(--admin-muted)"><?= h($l['email']) ?></div>
+             </td>
+            <td style="font-size:12px;color:var(--admin-muted)"><?= h($l['category']) ?></td>
+            <td style="font-weight:700;color:#4caf8a">R<?= number_format($l['price'],0) ?></td>
+            <td>
+              <span class="abadge abadge-<?= $l['status']==='active'?'green':($l['status']==='sold'?'gold':($l['status']==='removed'?'red':'gray')) ?>">
+                <?= ucfirst($l['status']) ?>
+              </span>
+             </td>
+            <td>
+              <?php if (isset($l['quantity'])): ?>
+                <?php if ($l['quantity'] <= 0): ?>
+                  <span class="abadge abadge-red">Out of stock</span>
+                <?php elseif ($l['quantity'] === 1): ?>
+                  <span class="abadge abadge-gold">1 left</span>
+                <?php else: ?>
+                  <span class="abadge abadge-green"><?= $l['quantity'] ?> left</span>
+                <?php endif; ?>
               <?php else: ?>
-                <i class="bi bi-image" style="font-size:2.5rem;color:var(--kitchen-border)"></i>
+                <span style="color:var(--admin-muted);font-size:12px">—</span>
               <?php endif; ?>
-            </div>
-            <div class="listing-card-body">
-              <div class="listing-card-cat"><?= h($l['category']) ?></div>
-              <div class="listing-card-title"><?= h($l['title']) ?></div>
-              <div class="listing-card-location"><i class="bi bi-geo-alt"></i> <?= h($l['location'] ?? 'South Africa') ?></div>
-              <div class="d-flex align-items-center gap-2 mt-1 mb-2">
-                <span class="stars" style="font-size:12px"><?= str_repeat('★', round($l['avg_rating'])) . str_repeat('☆', 5-round($l['avg_rating'])) ?></span>
-                <?php if ($l['id_verified']==='verified'): ?>
-                <span class="badge-green ms-auto" style="font-size:10px"><i class="bi bi-shield-check"></i> Verified</span>
+             </td>
+            <td style="font-size:11px;color:var(--admin-muted)"><?= date('d M Y', strtotime($l['created_at'])) ?></td>
+            <td>
+              <div style="display:flex;gap:0.4rem">
+                <?php if ($l['status'] !== 'removed'): ?>
+                <form method="POST" style="display:inline" onsubmit="return confirm('Remove this listing?')">
+                  <input type="hidden" name="listing_id" value="<?= $l['listing_id'] ?>">
+                  <input type="hidden" name="action" value="remove">
+                  <button type="submit" class="admin-btn admin-btn-danger" style="font-size:11px"><i class="bi bi-eye-slash"></i> Remove</button>
+                </form>
+                <?php else: ?>
+                <form method="POST" style="display:inline">
+                  <input type="hidden" name="listing_id" value="<?= $l['listing_id'] ?>">
+                  <input type="hidden" name="action" value="activate">
+                  <button type="submit" class="admin-btn admin-btn-primary" style="font-size:11px"><i class="bi bi-check"></i> Restore</button>
+                </form>
                 <?php endif; ?>
               </div>
-              <div class="listing-card-footer">
-                <div>
-                  <div class="listing-price">R <?= number_format($l['price'], 0) ?></div>
-                  <small class="text-muted" style="font-size:11px">by <?= h($l['full_name']) ?></small>
-                </div>
-                <a href="listing.php?id=<?= $l['listing_id'] ?>" class="btn-kitchen-primary" style="padding:7px 12px;font-size:12px">
-                  View <i class="bi bi-arrow-right"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
+             </td>
+          </tr>
+          <?php endforeach; ?>
+          <?php if (empty($listings)): ?>
+          <tr>
+            <td colspan="8" style="text-align:center;color:var(--admin-muted);padding:2rem">No listings found</td>
+          </tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
     </div>
-
   </div>
-</div>
-
-<?php include 'includes/footer.php';  // ?>
+</main>
+</body>
+</html>

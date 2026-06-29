@@ -1,0 +1,231 @@
+/* Thekitchen Admin Panel Styles */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --admin-bg:     #0f0f0d;
+  --admin-surface:#1a1a16;
+  --admin-border: rgba(255,255,255,0.08);
+  --admin-green:  #1A6B3C;
+  --admin-gold:   #E8A020;
+  --admin-red:    #c0280a;
+  --admin-text:   #e8e6e0;
+  --admin-muted:  rgba(232,230,224,0.5);
+  --font-head:    'Syne', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+  --radius:       10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-body); background: var(--admin-bg); color: var(--admin-text); font-size: 14px; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.admin-sidebar {
+  width: 240px;
+  background: var(--admin-surface);
+  border-right: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  z-index: 50;
+  overflow-y: auto;
+}
+
+.admin-logo {
+  font-family: var(--font-head);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--admin-text);
+  padding: 0 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--admin-border);
+  margin-bottom: 1rem;
+}
+
+.admin-logo span { color: var(--admin-gold); }
+
+.admin-nav-section {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--admin-muted);
+  padding: 0.8rem 1.5rem 0.4rem;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.6rem 1.5rem;
+  color: var(--admin-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 0;
+  transition: all 0.18s;
+  border-left: 2px solid transparent;
+}
+
+.admin-nav-item:hover, .admin-nav-item.active {
+  color: var(--admin-text);
+  background: rgba(255,255,255,0.05);
+  border-left-color: var(--admin-gold);
+}
+
+.admin-nav-item i { width: 18px; text-align: center; }
+
+/* Main content */
+.admin-main {
+  margin-left: 240px;
+  flex: 1;
+  padding: 0;
+}
+
+/* Topbar */
+.admin-topbar {
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-topbar h4 {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--admin-text);
+  margin: 0;
+}
+
+.admin-content { padding: 2rem; }
+
+/* Stat cards */
+.admin-stat-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--accent, var(--admin-gold));
+}
+
+.admin-stat-num {
+  font-family: var(--font-head);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--admin-text);
+}
+
+.admin-stat-label {
+  font-size: 12px;
+  color: var(--admin-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tables */
+.admin-table-wrap {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  background: rgba(255,255,255,0.04);
+  padding: 0.75rem 1rem;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--admin-muted);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-text);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+/* Badges */
+.abadge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+.abadge-green  { background: rgba(26,107,60,0.25); color: #4caf8a; }
+.abadge-gold   { background: rgba(232,160,32,0.2); color: var(--admin-gold); }
+.abadge-red    { background: rgba(192,40,10,0.2); color: #e87a6a; }
+.abadge-gray   { background: rgba(255,255,255,0.08); color: var(--admin-muted); }
+.abadge-blue   { background: rgba(26,60,143,0.25); color: #6b9de8; }
+
+/* Buttons */
+.admin-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.18s;
+}
+.admin-btn-primary { background: var(--admin-green); color: #fff; }
+.admin-btn-primary:hover { background: #145530; color: #fff; }
+.admin-btn-danger  { background: rgba(192,40,10,0.2); color: #e87a6a; }
+.admin-btn-danger:hover { background: var(--admin-red); color: #fff; }
+.admin-btn-gold    { background: var(--admin-gold); color: #141410; }
+.admin-btn-gold:hover { background: #d4900e; color: #141410; }
+.admin-btn-ghost   { background: rgba(255,255,255,0.08); color: var(--admin-text); }
+.admin-btn-ghost:hover { background: rgba(255,255,255,0.15); }
+
+/* Forms */
+.admin-input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  padding: 0.55rem 0.9rem;
+  color: var(--admin-text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.18s;
+}
+.admin-input:focus { border-color: var(--admin-gold); }
+.admin-label { font-size: 12px; font-weight: 600; color: var(--admin-muted); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Card */
+.admin-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .admin-sidebar { width: 200px; }
+  .admin-main { margin-left: 200px; }
+  .admin-content { padding: 1rem; }
+}
